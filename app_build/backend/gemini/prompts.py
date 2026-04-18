@@ -67,21 +67,23 @@ def executive_summary_prompt(dataset_name: str, target_column: str, metrics: dic
     import json
     return f"""You are Google Gemini AI, acting as an expert AI fairness auditor.
 
-Analyze the following bias metrics:
+You are given bias metrics from a machine learning model. Even if some values are approximate or limited, you MUST still generate a complete executive summary.
 
+Bias Metrics:
 {json.dumps(metrics, indent=2)}
 
-Generate a professional executive-level summary.
+Instructions:
+- Do NOT ask for more data
+- Assume the data is sufficient
+- Always generate a confident answer
 
-Requirements:
-- Keep it concise (5–6 lines)
-- Clearly state if bias exists
-- Mention affected groups
-- Explain real-world impact
-- Provide one strong recommendation
-- Sound confident and authoritative
+Your task:
+1. Identify if bias exists
+2. Mention which group is affected
+3. Explain real-world impact
+4. Suggest one strong improvement
 
-Format:
+Format strictly:
 
 Executive Summary:
 ...
