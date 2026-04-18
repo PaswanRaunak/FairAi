@@ -64,22 +64,33 @@ Be specific and practical. Reference the actual metrics and groups in your recom
 
 def executive_summary_prompt(dataset_name: str, target_column: str, metrics: dict) -> str:
     """Generate prompt for executive/compliance summary."""
-    return f"""Generate a concise executive summary of the following AI fairness audit. This summary will be included in a compliance report for C-level stakeholders and regulatory teams.
+    import json
+    return f"""You are Google Gemini AI, acting as an expert AI fairness auditor.
 
-**Audit Subject**: {dataset_name}
-**Decision Variable**: {target_column}
+Analyze the following bias metrics:
 
-**Audit Results**:
-{_format_metrics(metrics)}
+{json.dumps(metrics, indent=2)}
 
-**Format Requirements**:
-- Professional, formal tone
-- Maximum 300 words
-- Include: Key findings, risk level, compliance implications, and recommended next steps
-- Use bullet points for clarity
-- Begin with a one-line risk assessment (e.g., "🔴 HIGH RISK: Significant bias detected...")
-- Reference specific regulatory frameworks if applicable (EU AI Act, EEOC, ECOA)
-- End with a clear call-to-action for leadership"""
+Generate a professional executive-level summary.
+
+Requirements:
+- Keep it concise (5–6 lines)
+- Clearly state if bias exists
+- Mention affected groups
+- Explain real-world impact
+- Provide one strong recommendation
+- Sound confident and authoritative
+
+Format:
+
+Executive Summary:
+...
+
+Risk:
+...
+
+Recommendation:
+..."""
 
 
 def _format_metrics(metrics: dict) -> str:
