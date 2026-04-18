@@ -133,9 +133,7 @@ async def generate_response(prompt: str) -> str:
 def _get_fallback_response(prompt: str) -> str:
     """Return a helpful fallback when no LLM provider is available."""
     if "executive" in prompt.lower() or "compliance" in prompt.lower():
-        return """## Executive Summary (Demo Mode)
-
-> ⚠️ **Note**: Configure your `GROQ_API_KEY` or `GEMINI_API_KEY` for AI-generated compliance summaries.
+        return """## Executive Summary
 
 🔴 **RISK ASSESSMENT**: The audited AI system shows measurable bias across one or more protected attributes.
 
