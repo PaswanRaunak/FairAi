@@ -132,29 +132,7 @@ async def generate_response(prompt: str) -> str:
 # ── Fallback ────────────────────────────────────────────────────────
 def _get_fallback_response(prompt: str) -> str:
     """Return a helpful fallback when no LLM provider is available."""
-    if "mitigation" in prompt.lower() or "recommend" in prompt.lower():
-        return """## Bias Mitigation Recommendations (Demo Mode)
-
-> ⚠️ **Note**: Configure your `GROQ_API_KEY` or `GEMINI_API_KEY` in the `.env` file to get AI-powered analysis.
-
-### Data-Level Interventions
-- **Rebalance dataset** — Ensure equal representation across groups using oversampling (SMOTE) or undersampling
-- **Audit data collection** — Review data sources for systematic biases in sampling
-
-### Model-Level Interventions
-- **Use fairness constraints** — Apply Fairlearn's `ExponentiatedGradient` or `GridSearch` with appropriate fairness constraints
-- **Try alternative algorithms** — Test models less prone to perpetuating historical bias
-
-### Post-Processing Interventions
-- **Adjust decision thresholds** — Use group-specific thresholds to equalize outcomes
-- **Apply calibration** — Ensure predicted probabilities are well-calibrated across groups
-
-### Organizational Recommendations
-- **Establish a fairness review board** — Regular audits of AI decisions
-- **Implement monitoring** — Track fairness metrics in production over time
-- **Document decisions** — Maintain records of fairness trade-offs made"""
-
-    elif "executive" in prompt.lower() or "compliance" in prompt.lower():
+    if "executive" in prompt.lower() or "compliance" in prompt.lower():
         return """## Executive Summary (Demo Mode)
 
 > ⚠️ **Note**: Configure your `GROQ_API_KEY` or `GEMINI_API_KEY` for AI-generated compliance summaries.
@@ -176,6 +154,28 @@ def _get_fallback_response(prompt: str) -> str:
 2. Implement suggested mitigation strategies
 3. Re-audit after implementing changes
 4. Establish ongoing monitoring protocols"""
+
+    elif "mitigation" in prompt.lower() or "recommend" in prompt.lower():
+        return """## Bias Mitigation Recommendations (Demo Mode)
+
+> ⚠️ **Note**: Configure your `GROQ_API_KEY` or `GEMINI_API_KEY` in the `.env` file to get AI-powered analysis.
+
+### Data-Level Interventions
+- **Rebalance dataset** — Ensure equal representation across groups using oversampling (SMOTE) or undersampling
+- **Audit data collection** — Review data sources for systematic biases in sampling
+
+### Model-Level Interventions
+- **Use fairness constraints** — Apply Fairlearn's `ExponentiatedGradient` or `GridSearch` with appropriate fairness constraints
+- **Try alternative algorithms** — Test models less prone to perpetuating historical bias
+
+### Post-Processing Interventions
+- **Adjust decision thresholds** — Use group-specific thresholds to equalize outcomes
+- **Apply calibration** — Ensure predicted probabilities are well-calibrated across groups
+
+### Organizational Recommendations
+- **Establish a fairness review board** — Regular audits of AI decisions
+- **Implement monitoring** — Track fairness metrics in production over time
+- **Document decisions** — Maintain records of fairness trade-offs made"""
 
     else:
         return """## Bias Analysis Summary (Demo Mode)
