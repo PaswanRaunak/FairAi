@@ -3,6 +3,8 @@ FairLens AI — Model Trainer
 Trains a lightweight classifier on uploaded data for bias analysis.
 """
 
+import uuid
+
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
@@ -24,6 +26,14 @@ def prepare_features(df: pd.DataFrame, target_column: str, sensitive_attributes:
     Returns X, y, feature_names, encoders, scaler.
     """
     df_clean = df.dropna(subset=[target_column]).copy()
+
+    # Validate that the target column is binary
+    unique_values = df_clean[target_column].nunique()
+    if unique_values != 2:
+        raise ValueError(
+            f"Target column '{target_column}' must be binary (exactly 2 unique values), "
+            f"but found {unique_values}. Please choose a different target column."
+        )
 
     y = df_clean[target_column].values.astype(int)
 
@@ -65,6 +75,7 @@ def train_model(
     target_column: str,
     sensitive_attributes: list[str],
     model_type: str = "logistic_regression",
+    uid: str = "",
 ) -> dict:
     """
     Train a model and return results.
@@ -91,9 +102,10 @@ def train_model(
     train_acc = accuracy_score(y_train, y_pred_train)
     test_acc = accuracy_score(y_test, y_pred_test)
 
-    # Store model in memory
-    model_id = f"model_{id(model)}"
-    _trained_models[model_id] = {
+    # Store model in memory, scoped to the user's uid
+    model_id = f"model_{uuid.uuid4().hex[:12]}"
+    scoped_key = f"{uid}:{model_id}"
+    _trained_models[scoped_key] = {
         "model": model,
         "scaler": scaler,
         "encoders": encoders,
@@ -104,6 +116,7 @@ def train_model(
         "df_clean": df_clean,
         "target_column": target_column,
         "sensitive_attributes": sensitive_attributes,
+        "owner_uid": uid,
     }
 
     return {
@@ -117,8 +130,9 @@ def train_model(
     }
 
 
-def get_trained_model(model_id: str) -> dict:
-    """Retrieve a trained model by ID."""
-    if model_id not in _trained_models:
+def get_trained_model(model_id: str, uid: str = "") -> dict:
+    """Retrieve a trained model by ID, validating ownership."""
+    scoped_key = f"{uid}:{model_id}"
+    if scoped_key not in _trained_models:
         raise ValueError(f"Model {model_id} not found. Please train a model first.")
-    return _trained_models[model_id]
+    return _trained_models[scoped_key]

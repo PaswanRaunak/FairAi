@@ -28,7 +28,7 @@ class AnalyzeRequest(BaseModel):
 async def train(req: TrainModelRequest, user: CurrentUser = Depends(get_current_user)):
     """Train a model on the uploaded dataset."""
     try:
-        data = get_stored_dataset(req.datasetId)
+        data = get_stored_dataset(req.datasetId, uid=user.uid)
         result = train_model(
             df=data["df"],
             target_column=req.targetColumn,

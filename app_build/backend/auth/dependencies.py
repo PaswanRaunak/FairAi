@@ -5,6 +5,7 @@ FastAPI dependencies for JWT verification and guest sessions.
 
 import uuid
 from fastapi import Header, HTTPException
+from cachetools import TTLCache
 from config.firebase_admin import verify_firebase_token
 
 
@@ -26,8 +27,8 @@ class CurrentUser:
         }
 
 
-# In-memory guest sessions (for demo purposes)
-_guest_sessions: dict[str, CurrentUser] = {}
+# Guest sessions with 1-hour TTL and max 1000 concurrent sessions
+_guest_sessions: TTLCache = TTLCache(maxsize=1000, ttl=3600)
 
 
 def create_guest_session() -> tuple[str, CurrentUser]:
@@ -69,13 +70,8 @@ async def get_current_user(authorization: str = Header(default="")) -> CurrentUs
             is_guest=False,
         )
 
-    # If Firebase isn't configured, allow the token as a simple pass-through for demo
-    # This enables the app to work without Firebase setup
-    return CurrentUser(
-        uid=f"demo_{token[:12]}",
-        display_name="Demo User",
-        is_guest=True,
-    )
+    # No valid authentication — reject
+    raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
 async def get_optional_user(authorization: str = Header(default="")) -> CurrentUser | None:

@@ -6,7 +6,7 @@ Handles dataset upload, preview, and demo data loading.
 import os
 import uuid
 import shutil
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Request
 from auth.dependencies import get_current_user, CurrentUser
 from datasets.parser import parse_dataset, get_dataset_preview, detect_target_columns
 from datasets.sensitive_detector import detect_sensitive_attributes
@@ -19,19 +19,22 @@ router = APIRouter(prefix="/api/datasets", tags=["Datasets"])
 _loaded_datasets: dict[str, dict] = {}
 
 
-def store_dataset(df, name: str) -> str:
-    """Store a dataset in memory and return its ID."""
+def store_dataset(df, name: str, uid: str) -> str:
+    """Store a dataset in memory, scoped to the user's uid."""
     dataset_id = uuid.uuid4().hex[:12]
-    _loaded_datasets[dataset_id] = {
+    scoped_key = f"{uid}:{dataset_id}"
+    _loaded_datasets[scoped_key] = {
         "df": df,
         "name": name,
+        "owner_uid": uid,
     }
     return dataset_id
 
 
-def get_stored_dataset(dataset_id: str):
-    """Retrieve a stored dataset by ID."""
-    data = _loaded_datasets.get(dataset_id)
+def get_stored_dataset(dataset_id: str, uid: str):
+    """Retrieve a stored dataset by ID, validating ownership."""
+    scoped_key = f"{uid}:{dataset_id}"
+    data = _loaded_datasets.get(scoped_key)
     if not data:
         raise HTTPException(status_code=404, detail="Dataset not found. Please upload or load a dataset.")
     return data
@@ -39,6 +42,7 @@ def get_stored_dataset(dataset_id: str):
 
 @router.post("/upload")
 async def upload_dataset(
+    request: Request,
     file: UploadFile = File(...),
     user: CurrentUser = Depends(get_current_user),
 ):
@@ -48,11 +52,28 @@ async def upload_dataset(
     if ext not in (".csv", ".xlsx", ".xls"):
         raise HTTPException(status_code=400, detail="Unsupported file format. Please upload CSV or Excel.")
 
-    # Save to temp
+    # Enforce upload size BEFORE writing to disk
+    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum upload size is {settings.MAX_UPLOAD_SIZE_MB} MB.",
+        )
+
+    # Stream to temp with byte-counting guard
     temp_path = os.path.join(settings.TEMP_DIR, f"{uuid.uuid4().hex}{ext}")
     try:
+        bytes_written = 0
         with open(temp_path, "wb") as f:
-            shutil.copyfileobj(file.file, f)
+            while chunk := await file.read(1024 * 256):  # 256 KB chunks
+                bytes_written += len(chunk)
+                if bytes_written > max_bytes:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"File too large. Maximum upload size is {settings.MAX_UPLOAD_SIZE_MB} MB.",
+                    )
+                f.write(chunk)
 
         # Parse
         df = parse_dataset(temp_path)
@@ -63,8 +84,8 @@ async def upload_dataset(
                 detail=f"Dataset too large. Maximum {settings.MAX_DATASET_ROWS:,} rows allowed.",
             )
 
-        # Store in memory
-        dataset_id = store_dataset(df, file.filename or "uploaded_dataset")
+        # Store in memory (scoped to user)
+        dataset_id = store_dataset(df, file.filename or "uploaded_dataset", uid=user.uid)
 
         # Generate preview
         preview = get_dataset_preview(df)
@@ -101,7 +122,7 @@ async def load_demo(name: str, user: CurrentUser = Depends(get_current_user)):
         )
 
     df = load_demo_dataset(name)
-    dataset_id = store_dataset(df, DEMO_DATASET_INFO[name]["name"])
+    dataset_id = store_dataset(df, DEMO_DATASET_INFO[name]["name"], uid=user.uid)
     preview = get_dataset_preview(df)
     sensitive = detect_sensitive_attributes(list(df.columns))
     targets = detect_target_columns(df)
@@ -119,7 +140,7 @@ async def load_demo(name: str, user: CurrentUser = Depends(get_current_user)):
 @router.get("/{dataset_id}/preview")
 async def get_preview(dataset_id: str, user: CurrentUser = Depends(get_current_user)):
     """Get preview of a loaded dataset."""
-    data = get_stored_dataset(dataset_id)
+    data = get_stored_dataset(dataset_id, uid=user.uid)
     preview = get_dataset_preview(data["df"])
     return {"datasetId": dataset_id, "name": data["name"], "preview": preview}
 
@@ -127,7 +148,7 @@ async def get_preview(dataset_id: str, user: CurrentUser = Depends(get_current_u
 @router.get("/{dataset_id}/sensitive")
 async def get_sensitive(dataset_id: str, user: CurrentUser = Depends(get_current_user)):
     """Get auto-detected sensitive attributes for a dataset."""
-    data = get_stored_dataset(dataset_id)
+    data = get_stored_dataset(dataset_id, uid=user.uid)
     sensitive = detect_sensitive_attributes(list(data["df"].columns))
     targets = detect_target_columns(data["df"])
     return {
