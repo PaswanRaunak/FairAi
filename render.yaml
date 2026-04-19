@@ -1,0 +1,29 @@
+# Render Blueprint — FairLens AI Backend
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: fairlens-ai-backend
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: app_build/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: LLM_PROVIDER
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false          # set manually in Render dashboard
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false          # set to your Firebase Hosting URL
+      - key: ENV
+        value: production

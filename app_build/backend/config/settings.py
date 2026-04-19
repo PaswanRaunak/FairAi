@@ -32,8 +32,12 @@ class Settings:
     CORS_ORIGINS: list[str] = [
         origin.strip()
         for origin in os.getenv(
-            "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000"
+            "CORS_ORIGINS",
+            "http://localhost:5173,http://localhost:3000,"
+            "https://fairlens-ai.web.app,https://fairlens-ai.firebaseapp.com,"
+            "https://fair-ai-rho.vercel.app",
         ).split(",")
+        if origin.strip()
     ]
 
     # Server
