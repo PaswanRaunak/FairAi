@@ -46,16 +46,27 @@ export default function ReportPage() {
         includeGemini,
       });
 
+      // Extract filename from Content-Disposition header if available
+      const disposition = response.headers?.['content-disposition'] || '';
+      const filenameMatch = disposition.match(/filename="?([^";\n]+)"?/);
+      const filename = filenameMatch
+        ? filenameMatch[1]
+        : `FairLens_Audit_${(datasetName || 'Report').replace(/\s+/g, '_')}.pdf`;
+
       // Download the PDF
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `FairLens_Audit_${datasetName.replace(/\s+/g, '_')}.pdf`;
+      link.setAttribute('download', filename);
+      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Delay cleanup to ensure download starts
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
 
       setGenerated(true);
     } catch (err) {
