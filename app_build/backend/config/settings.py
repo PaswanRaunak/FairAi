@@ -35,6 +35,7 @@ class Settings:
             "CORS_ORIGINS",
             "http://localhost:5173,http://localhost:3000,"
             "https://fairlens-ai.web.app,https://fairlens-ai.firebaseapp.com,"
+            "https://fairlens-ai-ef0b3.web.app,https://fairlens-ai-ef0b3.firebaseapp.com,"
             "https://fair-ai-rho.vercel.app",
         ).split(",")
         if origin.strip()
