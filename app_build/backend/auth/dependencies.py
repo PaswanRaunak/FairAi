@@ -55,10 +55,15 @@ async def get_current_user(authorization: str = Header(default="")) -> CurrentUs
 
     # Check guest sessions first
     if token.startswith("guest_token_"):
+        # Check server-side sessions first
         user = _guest_sessions.get(token)
         if user:
             return user
-        raise HTTPException(status_code=401, detail="Invalid or expired guest session")
+        # Accept client-generated guest tokens (frontend creates these directly)
+        guest_uid = token.replace("guest_token_", "", 1) or f"guest_{uuid.uuid4().hex[:12]}"
+        guest_user = CurrentUser(uid=guest_uid, display_name="Guest User", is_guest=True)
+        _guest_sessions[token] = guest_user  # Cache for subsequent requests
+        return guest_user
 
     # Try Firebase token verification
     decoded = verify_firebase_token(token)

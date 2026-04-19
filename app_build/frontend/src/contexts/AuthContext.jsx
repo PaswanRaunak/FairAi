@@ -55,17 +55,22 @@ export function AuthProvider({ children }) {
   }, []);
 
   const guestLogin = useCallback(async () => {
-    try {
-      const { data } = await authAPI.guestLogin();
-      setUser(data.user);
-      setToken(data.token);
-      localStorage.setItem('fairlens_user', JSON.stringify(data.user));
-      localStorage.setItem('fairlens_token', data.token);
-      return data;
-    } catch (error) {
-      console.error('Guest login failed:', error);
-      throw error;
-    }
+    // Client-side guest session — no backend required
+    const guestUid = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    const guestData = {
+      user: {
+        uid: guestUid,
+        email: null,
+        displayName: 'Guest User',
+        isGuest: true,
+      },
+      token: `guest_token_${guestUid}`,
+    };
+    setUser(guestData.user);
+    setToken(guestData.token);
+    localStorage.setItem('fairlens_user', JSON.stringify(guestData.user));
+    localStorage.setItem('fairlens_token', guestData.token);
+    return guestData;
   }, []);
 
   const emailLogin = useCallback(async (email, password) => {
