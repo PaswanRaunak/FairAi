@@ -154,4 +154,4 @@ FairLens AI helps:
 
 ## 🚧 Status
 
-Hackathon Prototype — Actively Improving 🚀
+Hackathon Prototype - Actively Improving 🚀
