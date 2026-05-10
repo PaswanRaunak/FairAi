@@ -1,4 +1,4 @@
-# 🧠 FairLens AI — Unbiased AI Decision System
+# 🧠 FairLens AI - Unbiased AI Decision System
 
 ## 🚀 Overview
 
